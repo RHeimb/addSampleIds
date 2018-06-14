@@ -16,7 +16,7 @@ namespace addSampleID
         {
             ScreenUpdating = false
         };
-        public static void AlterSheet(string filename, string laborSetId, string lNumber = "_", string date = "_", string test = "_")
+        public static void AlterSheet(string filename, string laborSetId, string lNumber = "_", string date = "_")
         {
 
             //string path = "C:\\Users\\robert\\Documents\\excelTests\\";
@@ -35,16 +35,12 @@ namespace addSampleID
                 int i;
                 for (i = 2; i <= recordCount; i++)
                 {
-                    string sheet = Convert.ToString(WS.Cells[i, "B"].Value);
                     string dataset = Convert.ToString(WS.Cells[i, "C"].Value); //important to use .Value since you get the com_object referance if you don't
-                    if ((sheet.Contains("CEC") || sheet.Contains("EPC")) && test == "CEC-EPC")
+                    if (dataset.Contains(date))
                     {
-                        if (dataset.Contains(date))
+                        if (dataset.Contains(laborSetId.Substring(0, 6)) != true)
                         {
-                            if (dataset.Contains(laborSetId.Substring(0, 6)) != true)
-                            {
-                                WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
-                            }
+                            WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
                         }
                     }
                 }
@@ -54,14 +50,10 @@ namespace addSampleID
                 int i;
                 for (i = 2; i <= recordCount; i++)
                 {
-                    string sheet = Convert.ToString(WS.Cells[i, "B"].Value);
                     string dataset = Convert.ToString(WS.Cells[i, "C"].Value);
-                    if ((sheet.Contains("CEC") || sheet.Contains("EPC")) && test == "CEC-EPC")
+                    if (dataset.Contains(laborSetId) != true)
                     {
-                        if (dataset.Contains(laborSetId) != true)
-                        {
-                            WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
-                        }
+                        WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
                     }
                 }
             }
@@ -128,7 +120,7 @@ namespace addSampleID
                     if (date != "NULL") {date = dateValues[2] + "-" + dateValues[1] + "-" + dateValues[0];}
                     
 
-                    blvSampleID.Add(new List<string> { values[0], values[2], date, values[4], values[1] }); //0=S-Belov; 1:L-0; 2=date; 3=BlvID, 4=test
+                    blvSampleID.Add(new List<string> { values[0], values[2], date, values[4] }); //0=S-Belov; 1:L-0; 2=date; 3=BlvID
                 }
             }
 
@@ -145,7 +137,7 @@ namespace addSampleID
                         int item;
                         for (item = 0; item <= filesWithBlvId.Length - 1; item++)
                         {
-                            AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2], blvSampleID[i][4]);
+                            AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2]);
                         }
                     }
                     else if (filesWithBlvId.Length == 0)
@@ -162,12 +154,12 @@ namespace addSampleID
 
                         if (filesWithLNumber.Length != 0)
                         {
-                            AlterSheet(filesWithLNumber[0], blvSampleID[i][0],"_","_", blvSampleID[i][4]);
+                            AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
                         }
                     }
                     else if (filesWithBlvId.Length == 1)
                     {
-                        AlterSheet(filesWithBlvId[0], blvSampleID[i][0], "_", "_", blvSampleID[i][4]);
+                        AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
                     }
                 }
             }
