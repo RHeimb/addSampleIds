@@ -137,7 +137,7 @@ namespace addSampleID
                         int item;
                         for (item = 0; item <= filesWithBlvId.Length - 1; item++)
                         {
-                            AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2]);
+                            AlterSheet(filesWithBlvId[item], blvSampleID[i+1][0],"_", blvSampleID[i][2]); //i+1 nur notlösung, da es im Ordner nur CEC-EPC gibt
                         }
                     }
                     else if (filesWithBlvId.Length == 0)
