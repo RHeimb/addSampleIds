@@ -125,7 +125,7 @@ namespace addSampleID
             }
 
             int i;
-            for (i = 0; i <= blvSampleID.Count() - 1; i++)
+            for (i = 0; i <= blvSampleID.Count() - 2; i++) //-2 wegen der i+1 notlösung
             {
                 if (i == 0 || blvSampleID[i][3] != blvSampleID[i - 1][3]) //Doppelte BLV-IDs aus dem Labvantage File werden übersprungen !Geht nur, wenn source absteigendnach L-Nummer sortiert wird! 
                 {
@@ -154,12 +154,12 @@ namespace addSampleID
 
                         if (filesWithLNumber.Length != 0)
                         {
-                            AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
+                            AlterSheet(filesWithLNumber[0], blvSampleID[i+1][0]);
                         }
                     }
                     else if (filesWithBlvId.Length == 1)
                     {
-                        AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
+                        AlterSheet(filesWithBlvId[0], blvSampleID[i+1][0]);
                     }
                 }
             }
