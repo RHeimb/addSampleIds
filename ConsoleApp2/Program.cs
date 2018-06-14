@@ -38,7 +38,7 @@ namespace addSampleID
                     string dataset = Convert.ToString(WS.Cells[i, "C"].Value); //important to use .Value since you get the com_object referance if you don't
                     if (dataset.Contains(date))
                     {
-                        if (dataset.Contains(laborSetId) != true)
+                        if (dataset.Contains(laborSetId.Substring(0,6)) != true)
                         {
                             WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
                         }
