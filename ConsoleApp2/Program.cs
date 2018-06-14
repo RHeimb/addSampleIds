@@ -107,7 +107,7 @@ namespace addSampleID
             Console.WriteLine("Bitte Dateipfad angeben, der zu bearbeitende Excel-Dateien enthält");
             string workingPath = Console.ReadLine();
 
-            var blvSampleID = new List<(string laborSetId, string lNumber, string date, string blvId)>();
+            var blvSampleID = new List<List<string>>();
             using (var reader = new StreamReader(sourcePath))
             {
                 while (!reader.EndOfStream)
@@ -120,16 +120,16 @@ namespace addSampleID
                     if (date != "NULL") {date = dateValues[2] + "-" + dateValues[1] + "-" + dateValues[0];}
                     
 
-                    blvSampleID.Add((values[0], values[2], date, values[4]));
+                    blvSampleID.Add(new List<string> { values[0], values[2], date, values[4] }); //0=S-Belov; 1:L-0; 2=date; 3=BlvID
                 }
             }
 
             int i;
             for (i = 0; i <= blvSampleID.Count() - 1; i++)
             {
-                if (i == 0 || blvSampleID[i].blvId != blvSampleID[i - 1].blvId) //Doppelte BLV-IDs aus dem Labvantage File werden übersprungen !Geht nur, wenn source absteigendnach L-Nummer sortiert wird! 
+                if (i == 0 || blvSampleID[i][3] != blvSampleID[i - 1][3]) //Doppelte BLV-IDs aus dem Labvantage File werden übersprungen !Geht nur, wenn source absteigendnach L-Nummer sortiert wird! 
                 {
-                    string fn = blvSampleID[i].blvId.Substring(blvSampleID[i].blvId.Length - 6); //Benutze nur die Laufnummer der BLV-ID
+                    string fn = blvSampleID[i][3].Substring(blvSampleID[i][3].Length - 6); //Benutze nur die Laufnummer der BLV-ID
                     string[] filesWithBlvId = Directory.GetFiles(workingPath, "*" + fn + "*");
 
                     if (filesWithBlvId.Length == 2)
@@ -137,12 +137,12 @@ namespace addSampleID
                         int item;
                         for (item = 0; item <= filesWithBlvId.Length - 1; item++)
                         {
-                            AlterSheet(filesWithBlvId[item], blvSampleID[i].laborSetId,"_", blvSampleID[i].date);
+                            AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2]);
                         }
                     }
                     else if (filesWithBlvId.Length == 0)
                     {
-                        string altFn = blvSampleID[i].lNumber;
+                        string altFn = blvSampleID[i][1];
                         //vielleicht contains() auf directory files?
                         string[] filesWithLNumber = Directory.GetFiles(workingPath, "*" + altFn + "*");
 
@@ -154,12 +154,12 @@ namespace addSampleID
 
                         if (filesWithLNumber.Length != 0)
                         {
-                            AlterSheet(filesWithLNumber[0], blvSampleID[i].laborSetId);
+                            AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
                         }
                     }
                     else if (filesWithBlvId.Length == 1)
                     {
-                        AlterSheet(filesWithBlvId[0], blvSampleID[i].laborSetId);
+                        AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
                     }
                 }
             }
