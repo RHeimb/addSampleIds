@@ -51,7 +51,7 @@ namespace addSampleID
                 for (i = 2; i <= recordCount; i++)
                 {
                     string dataset = Convert.ToString(WS.Cells[i, "C"].Value);
-                    if (dataset.Contains(laborSetId) == false)
+                    if (dataset.Contains(laborSetId.Substring(0, 7)) == false)
                     {
                         WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
                     }
@@ -129,8 +129,7 @@ namespace addSampleID
             int i;
             for (i = 0; i <= blvSampleID.Count() - 1; i++)
             {
-                if (i == 0 || blvSampleID[i][3] != blvSampleID[i - 1][3]) //Doppelte BLV-IDs aus dem Labvantage File werden übersprungen !Geht nur, wenn source absteigendnach L-Nummer sortiert wird! 
-                {
+                
                     string fn = blvSampleID[i][3].Substring(blvSampleID[i][3].Length - 6); //Benutze nur die Laufnummer der BLV-ID
                     string[] filesWithBlvId = Directory.GetFiles(workingPath, "*" + fn + "*");
 
@@ -163,7 +162,7 @@ namespace addSampleID
                     {
                         AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
                     }
-                }
+                
             }
 
             //tidy up. Kill every used Excel process
