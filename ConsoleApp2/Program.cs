@@ -116,16 +116,18 @@ namespace addSampleID
                     string[] values = line.Split(';');
                     //Datum Format t.m.xxxx -> xxxx-m-t
                     string date = values[3];
-                    string[] dateValues = date.Split('.');
-                    if (date != "NULL") {date = dateValues[2] + "-" + dateValues[1] + "-" + dateValues[0];}
-                    
+                    if (date.Contains("."))
+                    {
+                        string[] dateValues = date.Split('.');
+                        if (date != "NULL") { date = dateValues[2] + "-" + dateValues[1] + "-" + dateValues[0]; }
+                    }
 
                     blvSampleID.Add(new List<string> { values[0], values[2], date, values[4] }); //0=S-Belov; 1:L-0; 2=date; 3=BlvID
                 }
             }
 
             int i;
-            for (i = 0; i <= blvSampleID.Count() - 2; i++) //-2 wegen der i+1 notlösung
+            for (i = 0; i <= blvSampleID.Count() - 1; i++)
             {
                 if (i == 0 || blvSampleID[i][3] != blvSampleID[i - 1][3]) //Doppelte BLV-IDs aus dem Labvantage File werden übersprungen !Geht nur, wenn source absteigendnach L-Nummer sortiert wird! 
                 {
@@ -137,7 +139,7 @@ namespace addSampleID
                         int item;
                         for (item = 0; item <= filesWithBlvId.Length - 1; item++)
                         {
-                            AlterSheet(filesWithBlvId[item], blvSampleID[i+1][0],"_", blvSampleID[i][2]); //i+1 nur notlösung, da es im Ordner nur CEC-EPC gibt
+                            AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2]); //i+1 nur notlösung, da es im Ordner nur CEC-EPC gibt
                         }
                     }
                     else if (filesWithBlvId.Length == 0)
@@ -154,12 +156,12 @@ namespace addSampleID
 
                         if (filesWithLNumber.Length != 0)
                         {
-                            AlterSheet(filesWithLNumber[0], blvSampleID[i+1][0]);
+                            AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
                         }
                     }
                     else if (filesWithBlvId.Length == 1)
                     {
-                        AlterSheet(filesWithBlvId[0], blvSampleID[i+1][0]);
+                        AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
                     }
                 }
             }
