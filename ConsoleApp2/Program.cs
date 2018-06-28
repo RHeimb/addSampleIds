@@ -16,7 +16,7 @@ namespace addSampleID
         {
             ScreenUpdating = false
         };
-        public static void AlterSheet(string filename, string laborSetId, string lNumber = "_", string date = "_")
+        public static List<string> AlterSheet(string filename, string laborSetId, string lNumber = "_", string date = "_")
         {
 
             //string path = "C:\\Users\\robert\\Documents\\excelTests\\";
@@ -27,6 +27,8 @@ namespace addSampleID
             Excel.Range userRange = WS.UsedRange;
             int recordCount = userRange.Rows.Count;
             Console.WriteLine("konkatiniere...");
+
+            List<string> suspiciousDatasets = new List<string>();
 
             //Iff there are more than one entry for a specific blvId, then use the date to distiguish between V1 and V2
             //If WS.Cells !contains like laborSetId???
@@ -42,25 +44,81 @@ namespace addSampleID
                         {
                             WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
                         }
+                        else
+                        {
+                            suspiciousDatasets.Add(dataset + "--------------S-NR vorhanden");
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (date == "_")
+            {
+                for (int i = 2; i <= recordCount; i++)
+                {
+                    string dataset = Convert.ToString(WS.Cells[i, "C"].Value);       
+                    if (dataset.Contains(laborSetId.Substring(0, 7)) == false)
+                    {
+                        WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
+                    }
+                    else
+                    {
+                        suspiciousDatasets.Add(dataset + "--------------S-NR vorhanden");
+                        break;
                     }
                 }
             }
             else
             {
-                int i;
-                for (i = 2; i <= recordCount; i++)
-                {
-                    string dataset = Convert.ToString(WS.Cells[i, "C"].Value);
-                    if (dataset.Contains(laborSetId.Substring(0, 7)) == false)
-                    {
-                        WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
-                    }
-                }
+                suspiciousDatasets.Add(Convert.ToString(WS.Cells[4, "C"].Value) + "--------------Pruefen!");
             }
+            string check = Convert.ToString(WS.Cells[recordCount - 6, "C"].Value);
+            if (check.Contains("S-BeLOV") == false) { suspiciousDatasets.Add(Convert.ToString(WS.Cells[recordCount - 6, "C"].Value) + "--------------LEER"); }
+
             WB.Save();
             WB.Close();
             Marshal.ReleaseComObject(WS);
             Marshal.ReleaseComObject(WB);
+            return suspiciousDatasets;
+        }
+        public static void WriteToCsv(params object[] ListOfDatasetsAndCsvFile)
+        {
+            if (ListOfDatasetsAndCsvFile.Length == 2) {
+                //add stringbuilder and write first entry
+                var csv = new StringBuilder();
+                string entry = ListOfDatasetsAndCsvFile[0].ToString();
+                csv.AppendLine(entry);
+                File.WriteAllText(ListOfDatasetsAndCsvFile[2].ToString(), csv.ToString());
+            }
+            else
+            {
+                //append to entry to given csv 
+                StringBuilder csv = ListOfDatasetsAndCsvFile[1] as StringBuilder;
+                string entry = ListOfDatasetsAndCsvFile[0].ToString();
+                csv.AppendLine(entry);
+                File.WriteAllText(ListOfDatasetsAndCsvFile[2].ToString(), csv.ToString());
+            }
+        }
+        public static List<List<String>> GetListWithParamsForEachBlvId(string sourcePath) {
+            var blvSampleID = new List<List<string>>();
+            using (var reader = new StreamReader(sourcePath))
+            {
+                while (!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    string[] values = line.Split(';');
+                    //Datum Format t.m.xxxx -> xxxx-m-t
+                    string date = values[3];
+                    if (date.Contains("."))
+                    {
+                        string[] dateValues = date.Split('.');
+                        if (date != "NULL") { date = dateValues[2] + "-" + dateValues[1] + "-" + dateValues[0]; }
+                    }
+
+                    blvSampleID.Add(new List<string> { values[0], values[2], date, values[4] }); //0=S-Belov; 1:L-0; 2=date; 3=BlvID
+                }
+            }
+            return blvSampleID;
         }
 
         public static void Main()
@@ -107,29 +165,12 @@ namespace addSampleID
             Console.WriteLine("Bitte Dateipfad angeben, der zu bearbeitende Excel-Dateien enthält");
             string workingPath = Console.ReadLine();
 
-            var blvSampleID = new List<List<string>>();
-            using (var reader = new StreamReader(sourcePath))
-            {
-                while (!reader.EndOfStream)
-                {
-                    var line = reader.ReadLine();
-                    string[] values = line.Split(';');
-                    //Datum Format t.m.xxxx -> xxxx-m-t
-                    string date = values[3];
-                    if (date.Contains("."))
-                    {
-                        string[] dateValues = date.Split('.');
-                        if (date != "NULL") { date = dateValues[2] + "-" + dateValues[1] + "-" + dateValues[0]; }
-                    }
+            List<List<string>> blvSampleID = GetListWithParamsForEachBlvId(sourcePath);
+            List<string> Errors = new List<string>();
 
-                    blvSampleID.Add(new List<string> { values[0], values[2], date, values[4] }); //0=S-Belov; 1:L-0; 2=date; 3=BlvID
-                }
-            }
-
-            int i;
-            for (i = 0; i <= blvSampleID.Count() - 1; i++)
+            for (int i = 0; i <= blvSampleID.Count() - 1; i++)
             {
-                
+                    List<string> potentialErrors = new List<string>();
                     string fn = blvSampleID[i][3].Substring(blvSampleID[i][3].Length - 6); //Benutze nur die Laufnummer der BLV-ID
                     string[] filesWithBlvId = Directory.GetFiles(workingPath, "*" + fn + "*");
 
@@ -138,7 +179,7 @@ namespace addSampleID
                         int item;
                         for (item = 0; item <= filesWithBlvId.Length - 1; item++)
                         {
-                            AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2]); //i+1 nur notlösung, da es im Ordner nur CEC-EPC gibt
+                            potentialErrors = AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2]); //i+1 nur notlösung, da es im Ordner nur CEC-EPC gibt
                         }
                     }
                     else if (filesWithBlvId.Length == 0)
@@ -155,16 +196,18 @@ namespace addSampleID
 
                         if (filesWithLNumber.Length != 0)
                         {
-                            AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
+                        potentialErrors = AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
                         }
                     }
                     else if (filesWithBlvId.Length == 1)
                     {
-                        AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
+                        potentialErrors = AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
                     }
                 
+                foreach(string entry in potentialErrors) { Errors.Add(entry); }
             }
-
+            StringBuilder csv = new StringBuilder();
+            foreach (string entry in Errors) { WriteToCsv(entry, csv, "C:\\Users\\robert\\Desktop\\suspDatasets.csv"); }
             //tidy up. Kill every used Excel process
             Console.WriteLine("Fertig. Räume auf...");
             xApp.ScreenUpdating = true;
