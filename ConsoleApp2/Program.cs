@@ -164,6 +164,8 @@ namespace addSampleID
             string sourcePath = Console.ReadLine();
             Console.WriteLine("Bitte Dateipfad angeben, der zu bearbeitende Excel-Dateien enthält");
             string workingPath = Console.ReadLine();
+            Console.WriteLine("Bitte Dateipfad angeben, in dem die Fehlerzusammenfassung erstellt werden soll");
+            string summaryOutPath = Console.ReadLine();
 
             List<List<string>> blvSampleID = GetListWithParamsForEachBlvId(sourcePath);
             List<string> Errors = new List<string>();
@@ -207,7 +209,7 @@ namespace addSampleID
                 foreach(string entry in potentialErrors) { Errors.Add(entry); }
             }
             StringBuilder csv = new StringBuilder();
-            foreach (string entry in Errors) { WriteToCsv(entry, csv, "C:\\Users\\robert\\Desktop\\suspDatasets.csv"); }
+            foreach (string entry in Errors) { WriteToCsv(entry, csv, summaryOutPath); }
             //tidy up. Kill every used Excel process
             Console.WriteLine("Fertig. Räume auf...");
             xApp.ScreenUpdating = true;
