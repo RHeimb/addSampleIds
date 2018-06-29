@@ -16,6 +16,7 @@ namespace addSampleID
         {
             ScreenUpdating = false
         };
+
         public static List<string> AlterSheet(string filename, string laborSetId, string lNumber = "_", string date = "_")
         {
 
@@ -163,14 +164,29 @@ namespace addSampleID
                 {
                     string blvID = Convert.ToString(WS.Cells[i, "D"].Value);
                     blvID = blvID.Replace(" ", "");
-                    WS.Cells[i, "C"].Value = blvDict[blvID];
-                }
-                else if (dataset.Contains("S-BeLOV-"))
+                    blvID.ToLower();
+                    if (blvDict.ContainsKey(blvID)) { WS.Cells[i, "C"].Value = blvDict[blvID]; }
+                    else if (blvID.Length >= 14)
+                    {
+                        if (blvDict.ContainsKey(blvID.Substring(0, 14))) { WS.Cells[i, "C"].Value = blvDict[blvID.Substring(0, 14)]; }
+                        else { suspiciousDatasets.Add(Convert.ToString(WS.Cells[i, "D"].Value)); }
+                    }
+                    else 
+                    {
+                        suspiciousDatasets.Add(Convert.ToString(WS.Cells[i, "D"].Value));
+                    }
+    }
+                else if (dataset.Contains("S-BeLOV-")) //if scheiß, case?
                 {
                     string sampleID = Convert.ToString(WS.Cells[i, "D"].Value);
                     sampleID = sampleID.Replace(" ", "");
-                    string blvID = sampleDict[sampleID];
-                    WS.Cells[i, "C"].Value = blvDict[blvID];
+                    sampleID.ToLower();
+                    if (sampleDict.ContainsKey(sampleID))
+                    {
+                        string blvID = sampleDict[sampleID];
+                        WS.Cells[i, "C"].Value = blvDict[blvID];
+                    }
+                    else { suspiciousDatasets.Add(sampleID); }
                 }
                 else
                 {
@@ -222,7 +238,6 @@ namespace addSampleID
             #endregion
 
             Console.WriteLine("Instanziere COM-Objekt...");
-
             Console.WriteLine("s = standard, h = haema");
             string choosed = Console.ReadLine();
             Console.WriteLine("Bitte Dateipfad zu durch Labvantage generierten .csv Datei angeben.");
@@ -231,6 +246,7 @@ namespace addSampleID
             string workingPath = Console.ReadLine();
             Console.WriteLine("Bitte Dateipfad angeben, in dem die Fehlerzusammenfassung erstellt werden soll");
             string summaryOutPath = Console.ReadLine();
+
             List<string> Errors = new List<string>();
 
             if (choosed == "s")
@@ -279,19 +295,26 @@ namespace addSampleID
 
             else if (choosed == "h")
             {
-                Dictionary<string, string> dictBlvSample = BuildDict(sourcePath, "blv");
-                Dictionary<string, string> dictSampleBlv = BuildDict(sourcePath, "sample");
-                List<string> potentialErrors = new List<string>();
+                    Dictionary<string, string> dictBlvSample = BuildDict(sourcePath, "blv");
+                    Dictionary<string, string> dictSampleBlv = BuildDict(sourcePath, "sample");
+                    List<string> potentialErrors = new List<string>();
 
-                string[] tables = Directory.GetFiles(workingPath);
+                    string[] tables = Directory.GetFiles(workingPath);
 
-                for(int i = 0; i < tables.Length; i++)
-                {
-                    potentialErrors = AlterSheetWithDict(workingPath,dictBlvSample,dictSampleBlv);
-                }
+                    for (int i = 0; i < tables.Length; i++)
+                    {
+                        if (tables[i].Contains(".xl")) //um weitere filenames ergänzen
+                        {
+                            potentialErrors = AlterSheetWithDict(tables[i], dictBlvSample, dictSampleBlv);
+                        }
+                    }
+                foreach (string entry in potentialErrors) { Errors.Add(entry); }
             }
+
+            //write log
             StringBuilder csv = new StringBuilder();
             foreach (string entry in Errors) { WriteToCsv(entry, csv, summaryOutPath); }
+
             //tidy up. Kill every used Excel process
             Console.WriteLine("Fertig. Räume auf...");
             xApp.ScreenUpdating = true;
