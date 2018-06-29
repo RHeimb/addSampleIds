@@ -120,6 +120,69 @@ namespace addSampleID
             }
             return blvSampleID;
         }
+        public static Dictionary<string,string> BuildDict(string sourcePath, string keyValue = "blv")
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+
+            using (var reader = new StreamReader(sourcePath))
+            {
+                while (!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    string[] values = line.Split(';');
+
+                    if (keyValue == "blv")
+                    {
+                        if (!dict.ContainsKey(values[0])) { dict.Add(values[0], values[1]); } //BlvID:analyse-basic SampleID                       
+                    }
+                    if (keyValue == "sample")
+                    {
+                        if (!dict.ContainsKey(values[1])) { dict.Add(values[1], values[0]); } //analyse-basic:BlvID
+                        if (!dict.ContainsKey(values[2])) { dict.Add(values[2], values[0]); } //CEC:BlvID
+                        if (!dict.ContainsKey(values[3])) { dict.Add(values[3], values[0]); } //cytokines:BlvID
+                    }
+                }
+            }
+            return dict;
+        }
+        public static List<string> AlterSheetWithDict(string filename, Dictionary<string, string> blvDict, Dictionary<string,string> sampleDict)
+        {
+            string path = filename;
+            Excel.Workbook WB = AddSampleIdToBlvSheet.xApp.Workbooks.Open(Filename: path, UpdateLinks: 0, ReadOnly: false, Format: 5, Password: "", WriteResPassword: "", IgnoreReadOnlyRecommended: true, Origin: Excel.XlPlatform.xlWindows, Delimiter: "\t", Editable: true, Notify: false, Converter: 0, AddToMru: true, Local: 1, CorruptLoad: 0);
+            Excel.Worksheet WS = WB.Worksheets[1];
+            Excel.Range userRange = WS.UsedRange;
+            int recordCount = userRange.Rows.Count;
+            Console.WriteLine("konkatiniere...");
+
+            List<string> suspiciousDatasets = new List<string>();
+
+            for (int i = 4; i <= recordCount; i++)
+            {
+                string dataset = Convert.ToString(WS.Cells[i, "D"].Value);
+                if (dataset.Contains("BLV-"))
+                {
+                    string blvID = Convert.ToString(WS.Cells[i, "D"].Value);
+                    blvID = blvID.Replace(" ", "");
+                    WS.Cells[i, "C"].Value = blvDict[blvID];
+                }
+                else if (dataset.Contains("S-BeLOV-"))
+                {
+                    string sampleID = Convert.ToString(WS.Cells[i, "D"].Value);
+                    sampleID = sampleID.Replace(" ", "");
+                    string blvID = sampleDict[sampleID];
+                    WS.Cells[i, "C"].Value = blvDict[blvID];
+                }
+                else
+                {
+                    suspiciousDatasets.Add(Convert.ToString(WS.Cells[i, "D"].Value));
+                }
+            }
+            WB.Save();
+            WB.Close();
+            Marshal.ReleaseComObject(WS);
+            Marshal.ReleaseComObject(WB);
+            return suspiciousDatasets;
+        }
 
         public static void Main()
         {
@@ -160,18 +223,22 @@ namespace addSampleID
 
             Console.WriteLine("Instanziere COM-Objekt...");
 
+            Console.WriteLine("s = standard, h = haema");
+            string choosed = Console.ReadLine();
             Console.WriteLine("Bitte Dateipfad zu durch Labvantage generierten .csv Datei angeben.");
             string sourcePath = Console.ReadLine();
             Console.WriteLine("Bitte Dateipfad angeben, der zu bearbeitende Excel-Dateien enthält");
             string workingPath = Console.ReadLine();
             Console.WriteLine("Bitte Dateipfad angeben, in dem die Fehlerzusammenfassung erstellt werden soll");
             string summaryOutPath = Console.ReadLine();
-
-            List<List<string>> blvSampleID = GetListWithParamsForEachBlvId(sourcePath);
             List<string> Errors = new List<string>();
 
-            for (int i = 0; i <= blvSampleID.Count() - 1; i++)
+            if (choosed == "s")
             {
+                List<List<string>> blvSampleID = GetListWithParamsForEachBlvId(sourcePath);
+
+                for (int i = 0; i <= blvSampleID.Count() - 1; i++)
+                {
                     List<string> potentialErrors = new List<string>();
                     string fn = blvSampleID[i][3].Substring(blvSampleID[i][3].Length - 6); //Benutze nur die Laufnummer der BLV-ID
                     string[] filesWithBlvId = Directory.GetFiles(workingPath, "*" + fn + "*");
@@ -181,7 +248,7 @@ namespace addSampleID
                         int item;
                         for (item = 0; item <= filesWithBlvId.Length - 1; item++)
                         {
-                            potentialErrors = AlterSheet(filesWithBlvId[item], blvSampleID[i][0],"_", blvSampleID[i][2]); //i+1 nur notlösung, da es im Ordner nur CEC-EPC gibt
+                            potentialErrors = AlterSheet(filesWithBlvId[item], blvSampleID[i][0], "_", blvSampleID[i][2]); //i+1 nur notlösung, da es im Ordner nur CEC-EPC gibt
                         }
                     }
                     else if (filesWithBlvId.Length == 0)
@@ -198,15 +265,30 @@ namespace addSampleID
 
                         if (filesWithLNumber.Length != 0)
                         {
-                        potentialErrors = AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
+                            potentialErrors = AlterSheet(filesWithLNumber[0], blvSampleID[i][0]);
                         }
                     }
                     else if (filesWithBlvId.Length == 1)
                     {
                         potentialErrors = AlterSheet(filesWithBlvId[0], blvSampleID[i][0]);
                     }
-                
-                foreach(string entry in potentialErrors) { Errors.Add(entry); }
+
+                    foreach (string entry in potentialErrors) { Errors.Add(entry); }
+                }
+            }
+
+            else if (choosed == "h")
+            {
+                Dictionary<string, string> dictBlvSample = BuildDict(sourcePath, "blv");
+                Dictionary<string, string> dictSampleBlv = BuildDict(sourcePath, "sample");
+                List<string> potentialErrors = new List<string>();
+
+                string[] tables = Directory.GetFiles(workingPath);
+
+                for(int i = 0; i < tables.Length; i++)
+                {
+                    potentialErrors = AlterSheetWithDict(workingPath,dictBlvSample,dictSampleBlv);
+                }
             }
             StringBuilder csv = new StringBuilder();
             foreach (string entry in Errors) { WriteToCsv(entry, csv, summaryOutPath); }
