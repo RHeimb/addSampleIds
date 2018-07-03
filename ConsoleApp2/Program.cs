@@ -27,7 +27,7 @@ namespace addSampleID
             Excel.Worksheet WS = WB.Worksheets[1];
             Excel.Range userRange = WS.UsedRange;
             int recordCount = userRange.Rows.Count;
-            Console.WriteLine("konkatiniere...");
+            Console.WriteLine("konkatiniere..." + path);
 
             List<string> suspiciousDatasets = new List<string>();
 
@@ -47,8 +47,8 @@ namespace addSampleID
                         }
                         else
                         {
-                            suspiciousDatasets.Add(dataset + "--------------S-NR vorhanden");
-                            break;
+                            dataset.Replace(dataset.Substring(0, 14), laborSetId);
+                            WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
                         }
                     }
                 }
@@ -65,8 +65,7 @@ namespace addSampleID
                     else
                     {
                         dataset.Replace(dataset.Substring(0, 14),laborSetId);
-                        suspiciousDatasets.Add(dataset + "--------------S-NR aktualisiert");
-                        break;
+                        WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
                     }
                 }
             }
