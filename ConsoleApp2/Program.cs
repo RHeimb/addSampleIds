@@ -47,8 +47,11 @@ namespace addSampleID
                         }
                         else
                         {
+                            Console.WriteLine(path + "!!!!!!!!!!!" + dataset + "!!!!!!!!!!!!!!");
                             dataset.Replace(dataset.Substring(0, 14), laborSetId);
-                            WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
+                            Console.WriteLine(path + "-----------" + dataset + "--------------");
+                            WS.Cells[i, "C"].Value = dataset;
+                            Console.WriteLine(path + "aktualisiere Sample-ID");
                         }
                     }
                 }
@@ -64,8 +67,11 @@ namespace addSampleID
                     }
                     else
                     {
-                        dataset.Replace(dataset.Substring(0, 14),laborSetId);
-                        WS.Cells[i, "C"].Value = laborSetId + " " + dataset;
+                        Console.WriteLine(path + "!!!!!!!!!!!" + dataset + "!!!!!!!!!!!!!!");
+                        dataset.Replace(dataset.Substring(0, 14), laborSetId);
+                        Console.WriteLine(path + "-----------" + dataset + "--------------");
+                        WS.Cells[i, "C"].Value = dataset;
+                        Console.WriteLine(path + "aktualisiere Sample-ID");
                     }
                 }
             }
