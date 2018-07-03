@@ -64,7 +64,8 @@ namespace addSampleID
                     }
                     else
                     {
-                        suspiciousDatasets.Add(dataset + "--------------S-NR vorhanden");
+                        dataset.Replace(dataset.Substring(0, 14),laborSetId);
+                        suspiciousDatasets.Add(dataset + "--------------S-NR aktualisiert");
                         break;
                     }
                 }
@@ -176,7 +177,7 @@ namespace addSampleID
                         suspiciousDatasets.Add(Convert.ToString(WS.Cells[i, "D"].Value));
                     }
     }
-                else if (dataset.Contains("S-BeLOV-")) //if scheiß, case?
+                else if (dataset.Contains("S-BeLOV-")) 
                 {
                     string sampleID = Convert.ToString(WS.Cells[i, "D"].Value);
                     sampleID = sampleID.Replace(" ", "");
